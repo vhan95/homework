@@ -1,5 +1,9 @@
 # CS294-112 HW 1: Imitation Learning
 
+Question 2.1:
+To generate the figure, run
+python3 run_expert.py --render --num_rollouts 20 experts/Hopper-v1.pkl Hopper-v1
+
 Dependencies: TensorFlow, MuJoCo version 1.31, OpenAI Gym
 
 **Note**: MuJoCo versions until 1.5 do not support NVMe disks therefore won't be compatible with recent Mac machines.
