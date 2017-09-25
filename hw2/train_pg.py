@@ -456,7 +456,7 @@ def train_PG(exp_name='',
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('env_name', type=str)
+    parser.add_argument('--env_name', type=str, default='CartPole-v0')
     parser.add_argument('--exp_name', type=str, default='vpg')
     parser.add_argument('--render', action='store_true')
     parser.add_argument('--discount', type=float, default=1.0)
