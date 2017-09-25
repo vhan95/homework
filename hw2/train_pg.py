@@ -472,6 +472,7 @@ def main():
     parser.add_argument('--n_layers', '-l', type=int, default=1)
     parser.add_argument('--size', '-s', type=int, default=32)
     parser.add_argument('--sigmoid_activation', '-sa', action='store_true')
+    parser.add_argument('--job-dir', type=str, default='NULL')
     args = parser.parse_args()
 
     if not(os.path.exists('data')):
