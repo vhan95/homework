@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-REQUIRED_PACKAGES = ['tensorflow>=1.2.0',
+REQUIRED_PACKAGES = ['tensorflow>=1.3.0',
 'gym>=0.1',
 'seaborn>=0.1',
 'pandas>=0.1',
