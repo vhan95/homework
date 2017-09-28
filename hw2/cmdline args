@@ -1,0 +1,5 @@
+python train_pg.py InvertedPendulum-v1 -b 1000 -e 5 -rtg --n_layers 3 --size 128 -lr 2e-3 --exp_name InvertedPendulum
+python train_pg.py InvertedPendulum-v1 -b 1000 -e 5 -rtg --n_layers 3 --size 128 -lr 2e-3 -bl --exp_name InvertedPendulum_nnBaseline
+
+python train_pg.py HalfCheetah-v1 -ep 150 --discount 0.9 -b 1000 -e 1 -rtg -sa --n_layers 2 --size 128 -lr 5e-3 --exp_name HalfCheetah
+
