@@ -128,6 +128,17 @@ def learn(env,
     ######
     
     # YOUR CODE HERE
+    q_t = q_func(obs_t_float, num_actions, scope="q_func", reuse=False)
+    q_tp1 = q_func(obs_tp1_float, num_actions, scope="target_q_func", reuse=False)
+    
+    q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_func')
+    target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_q_func')
+    
+    q_next = rew_t_ph + (1.-done_mask_ph)*gamma*tf.reduce_max(q_tp1, axis=1)
+    q_act = tf.reduce_sum(tf.one_hot(act_t_ph, num_actions) * q_t, axis=1)
+    
+    total_error = tf.nn.l2_loss(q_act-q_next)
+    
 
     ######
 
@@ -195,6 +206,26 @@ def learn(env,
         #####
         
         # YOUR CODE HERE
+        idx = replay_buffer.store_frame(last_obs)
+        
+        if model_initialized == False:
+            action = env.action_space.sample()
+        else:
+            if np.random.random_sample() < exploration.value(t):
+                action = env.action_space.sample()
+            else:
+                frames = replay_buffer.encode_recent_observation()
+                action = np.argmax(session.run(q_t, feed_dict={obs_t_ph: [frames]}))
+
+        obs, reward, done, info = env.step(action)
+        
+        replay_buffer.store_effect(idx, action, reward, done)
+        
+        if done == True:
+            last_obs = env.reset()
+        else:
+            last_obs = obs
+            
 
         #####
 
@@ -245,6 +276,33 @@ def learn(env,
             #####
             
             # YOUR CODE HERE
+            
+            # 3.a
+            batch = replay_buffer.sample(batch_size)
+            
+            # 3.b
+            if model_initialized == False:
+                initialize_interdependent_variables(session, tf.global_variables(), {
+                    obs_t_ph: batch[0],
+                    obs_tp1_ph: batch[3],
+                })
+                model_initialized = True
+                
+            
+            
+            # 3.c
+            session.run([train_fn, total_error], feed_dict={obs_t_ph: batch[0],
+                                                            act_t_ph: batch[1],
+                                                            rew_t_ph: batch[2],
+                                                            obs_tp1_ph: batch[3],
+                                                            done_mask_ph: batch[4],
+                                                            learning_rate: optimizer_spec.lr_schedule.value(t)})
+    
+            # 3.d
+            num_param_updates += 1
+            if num_param_updates % target_update_freq == 0:
+                session.run(update_target_fn)
+    
 
             #####
 
