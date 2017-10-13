@@ -51,8 +51,8 @@ class NNDynamicsModel():
               output_activation=output_activation
               )
         
-        loss = tf.nn.l2_loss(self.out-self.deltas)
-        self.update_op = tf.train.AdamOptimizer(learning_rate).minimize(loss)
+        self.loss = tf.nn.l2_loss(self.out-self.deltas)
+        self.update_op = tf.train.AdamOptimizer(learning_rate).minimize(self.loss)
 
     def fit(self, data):
         """
@@ -62,7 +62,7 @@ class NNDynamicsModel():
         """YOUR CODE HERE """
         
         obs = (np.concatenate([path["observations"] for path in data]) - self.normalization[0]) / (self.normalization[1]+self.eps)
-       # n_obs = (np.concatenate([path["next_observations"] for path in data]) - self.normalization[0]) / (self.normalization[1]+eps)
+
         delta = np.concatenate([path["next_observations"] for path in data]) - np.concatenate([path["observations"] for path in data])
         delta = (delta - self.normalization[2]) / (self.normalization[3]+self.eps)
         
@@ -70,18 +70,19 @@ class NNDynamicsModel():
         
         for i in range(self.iterations):
             perm_ind = np.random.permutation(obs.shape[0])
-            for j in range(int(obs.size/self.batch_size)):
+            for j in range(int(obs.shape[0]/self.batch_size)):
                 index = perm_ind[j*self.batch_size:((j+1)*self.batch_size-1)]
                 
-                self.sess.run([self.update_op], feed_dict={self.obs_and_act: np.concatenate([obs[index], acts[index]], axis=1),
+                l, u = self.sess.run([self.loss, self.update_op], feed_dict={self.obs_and_act: np.concatenate([obs[index], acts[index]], axis=1),
                                                         self.deltas: delta[index]})
 
     def predict(self, states, actions):
         """ Write a function to take in a batch of (unnormalized) states and (unnormalized) actions and return the (unnormalized) next states as predicted by using the model """
         """ YOUR CODE HERE """
+        
         states_n = (states - self.normalization[0]) / (self.normalization[1]+self.eps)
         actions_n = (actions - self.normalization[4]) / (self.normalization[5]+self.eps)
 
-        deltas = self.sess.run([self.out], feed_dict={self.obs_and_act: np.concatenate([states_n, actions_n], axis=1)})
+        deltas = self.sess.run(self.out, feed_dict={self.obs_and_act: np.concatenate([states_n, actions_n], axis=1)})
         
         return (deltas*self.normalization[3]) + self.normalization[2] + states

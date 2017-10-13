@@ -42,37 +42,24 @@ class MPCcontroller(Controller):
         """ YOUR CODE HERE """
         """ Note: be careful to batch your simulations through the model for speed """
         
-        paths = []
-        for i in range(self.num_simulated_paths):
-            paths.append({})
-            paths[i]['observations'] = []
-            paths[i]['actions'] = []
-            paths[i]['next_observations'] = []
-            
+        observations = np.zeros([self.horizon, self.num_simulated_paths, self.env.obs_dim])
+        nobservations = np.zeros([self.horizon, self.num_simulated_paths, self.env.obs_dim])
+        
+        actions = np.zeros([self.horizon, self.num_simulated_paths, self.env.action_space.shape[0]])
+    
         states = np.tile(state, [self.num_simulated_paths, 1])
-        actions = np.zeros([self.num_simulated_paths, self.env.action_space.shape[0]])
         
         for i in range(self.horizon):
             
+            observations[i] = states
             for j in range(self.num_simulated_paths):
-                paths[j]['observations'].append(states[j,:])
-                actions[j,:] = self.env.action_space.sample()
-                paths[j]['actions'].append(actions[j,:])
-
-            states = self.dyn_model.predict(states, actions)[0]
-            
-            for j in range(self.num_simulated_paths):
-                paths[j]['next_observations'].append(states[j,:])
-        
-        
-        min_cost = np.finfo(float).max
-        min_ind = 0
-        for i in range(self.num_simulated_paths):
-            path = paths[i]
-            cost = trajectory_cost_fn(self.cost_fn, path['observations'], path['actions'], path['next_observations'])
-            if cost < min_cost:
-                min_cost = cost
-                min_ind = i
+                actions[i,j] = self.env.action_space.sample()
                 
-        return paths[min_ind]['actions'][0]
+            states = self.dyn_model.predict(states, actions[i])
+            nobservations[i] = states
+        
+        cost = trajectory_cost_fn(self.cost_fn, observations, actions, nobservations)
+
+                
+        return actions[0][np.argmin(cost)]
 
