@@ -211,6 +211,7 @@ def learn(env,
         if model_initialized == False:
             action = env.action_space.sample()
         else:
+            # Epsilon greedy exploration
             if np.random.random_sample() < exploration.value(t):
                 action = env.action_space.sample()
             else:
@@ -323,4 +324,4 @@ def learn(env,
             print("learning_rate %f" % optimizer_spec.lr_schedule.value(t))
             sys.stdout.flush()
             
-# data = np.genfromtxt("log.csv", dtype=None, delimiter=', ')
+

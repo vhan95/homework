@@ -22,8 +22,37 @@ def sample(env,
         and returns rollouts by running on the env. 
         Each path can have elements for observations, next_observations, rewards, returns, actions, etc.
     """
-    paths = []
+    
     """ YOUR CODE HERE """
+    
+    paths = []
+    for i in range(num_paths):
+        path = {}
+        path['observations'] = []
+        path['actions'] = []
+        path['next_observations'] = []
+        path['rewards'] = []
+        path['returns'] = []
+        for j in range(horizon):
+            if path['observations'] == []:
+                obs = env.reset()
+                
+            path['observations'].append(obs)  
+            
+            action = controller.get_action(obs)
+            path['actions'].append(action)
+            obs, reward, done, info = env.step(action)
+            path['rewards'].append(reward)
+            
+            if j == 0:
+                path['returns'].append(0)
+            else:
+                path['returns'].append(path['returns'][j-1] + reward)
+                
+            path['next_observations'].append(obs)
+            
+        paths.append(path)
+            
 
     return paths
 
@@ -38,6 +67,33 @@ def compute_normalization(data):
     """
 
     """ YOUR CODE HERE """
+#    mean_obs, std_obs, mean_deltas, std_deltas, mean_action, std_action = [],[],[],[],[],[]
+    obs = np.array([])
+    deltas = np.array([])
+    actions = np.array([])
+    
+    obs = np.concatenate([path['observations'] for path in data])
+    deltas = np.concatenate([(np.array(path['next_observations'])-np.array(path['observations'])) for path in data])
+    actions = np.concatenate([path['actions'] for path in data])
+#    for path in data:
+#        obs = np.concatenate([obs, path['observations']])
+#        deltas = np.concatenate([deltas, path['next_observations'] - path['observations']])
+#        actions = np.concatenate([actions, path['actions']])
+#        
+##        mean_obs.append(np.mean(path['observations']))
+##        std_obs.append(np.std(path['observations']))
+##        mean_deltas.append(np.mean(path['next_observations'] - path['observations']))
+##        std_obs.append(np.std(path['next_observations'] - path['observations']))
+##        mean_action.append(np.mean(path['actions']))
+##        std_action.append(np.std(path['actions']))
+    
+    mean_obs = np.mean(obs, axis=0)
+    std_obs = np.std(obs, axis=0)
+    mean_deltas = np.mean(deltas, axis=0)
+    std_deltas = np.std(deltas, axis=0)
+    mean_action = np.mean(actions, axis=0)
+    std_action = np.std(actions, axis=0)
+    
     return mean_obs, std_obs, mean_deltas, std_deltas, mean_action, std_action
 
 
@@ -112,6 +168,7 @@ def train(env,
     random_controller = RandomController(env)
 
     """ YOUR CODE HERE """
+    dataset = sample(env, random_controller, num_paths=num_paths_random, horizon=env_horizon)
 
 
     #========================================================
@@ -122,7 +179,7 @@ def train(env,
     # for normalizing inputs and denormalizing outputs
     # from the dynamics network. 
     # 
-    normalization = """ YOUR CODE HERE """
+    normalization = compute_normalization(dataset)
 
 
     #========================================================
@@ -164,8 +221,12 @@ def train(env,
     for itr in range(onpol_iters):
         """ YOUR CODE HERE """
 
+        dyn_model.fit(dataset)
+        trajectories= sample(env, mpc_controller, num_paths=num_simulated_paths, horizon=mpc_horizon)
+        dataset += trajectories
 
-
+        costs = [path_cost(cost_fn, path) for path in trajectories]
+        returns = [path['returns'][-1] for path in trajectories]
         # LOGGING
         # Statistics for performance of MPC policy using
         # our learned dynamics model
